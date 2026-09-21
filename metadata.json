@@ -1,0 +1,6 @@
+{
+  "name": "CleanCache Pro",
+  "description": "Aplikasi pembersih cache, file sampah, dan residual memori Android modern.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
