@@ -22,12 +22,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.PermMedia
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,9 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -64,13 +60,15 @@ import com.example.widgets.ScanButton
 import com.example.widgets.StorageGaugeCard
 
 /**
- * Halaman utama CleanCache Pro.
+ * Halaman utama CleanCache Pro beserta shortcut fitur File Besar & Pembersih Sosmed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     uiState: CleanerUiState,
     onStartScan: () -> Unit,
+    onOpenLargeFiles: () -> Unit,
+    onOpenSocialCleaner: () -> Unit,
     onToggleDarkMode: (Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onRefreshStorage: () -> Unit,
@@ -207,7 +205,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Baris Fitur Cepat (Fitur Tambahan)
+            // Judul Fitur Cepat Optimalisasi
             Text(
                 text = "Fitur Optimalisasi",
                 fontWeight = FontWeight.Bold,
@@ -218,6 +216,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Baris 1: Pembersih Cache & Cek Penyimpanan
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -237,6 +236,32 @@ fun HomeScreen(
                     icon = Icons.Rounded.Refresh,
                     accentColor = PrimaryNavy,
                     onClick = onRefreshStorage,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Baris 2: Pembersih File Besar & Pembersih Media Sosial
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickFeatureCard(
+                    title = "File Besar & Duplikat",
+                    description = "Cari video & zip besar",
+                    icon = Icons.Rounded.VideoLibrary,
+                    accentColor = AccentGreen,
+                    onClick = onOpenLargeFiles,
+                    modifier = Modifier.weight(1f)
+                )
+
+                QuickFeatureCard(
+                    title = "WhatsApp & TikTok",
+                    description = "Hapus cache & media",
+                    icon = Icons.Rounded.PermMedia,
+                    accentColor = PrimaryNavy,
+                    onClick = onOpenSocialCleaner,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -320,7 +345,7 @@ fun QuickFeatureCard(
             Text(
                 text = title,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(

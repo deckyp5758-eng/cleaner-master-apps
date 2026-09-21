@@ -18,9 +18,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.providers.UpdateViewModel
 import com.example.screens.HomeScreen
+import com.example.screens.LargeFilesScreen
 import com.example.screens.ResultScreen
 import com.example.screens.ScanResultScreen
 import com.example.screens.SettingsScreen
+import com.example.screens.SocialMediaCleanerScreen
 import com.example.ui.theme.CleanCacheTheme
 import com.example.viewmodel.CleanerViewModel
 import com.example.viewmodel.ScanState
@@ -69,7 +71,11 @@ fun CleanCacheApp(
                 }
             }
             ScanState.IDLE -> {
-                if (navController.currentDestination?.route != "home") {
+                if (navController.currentDestination?.route != "home" &&
+                    navController.currentDestination?.route != "large_files" &&
+                    navController.currentDestination?.route != "social_cleaner" &&
+                    navController.currentDestination?.route != "settings"
+                ) {
                     navController.navigate("home") {
                         popUpTo("home") { inclusive = true }
                     }
@@ -89,6 +95,8 @@ fun CleanCacheApp(
                 HomeScreen(
                     uiState = uiState,
                     onStartScan = { viewModel.startScan() },
+                    onOpenLargeFiles = { navController.navigate("large_files") },
+                    onOpenSocialCleaner = { navController.navigate("social_cleaner") },
                     onToggleDarkMode = { viewModel.toggleDarkMode(it) },
                     onOpenSettings = { navController.navigate("settings") },
                     onRefreshStorage = { viewModel.refreshStorageInfo() },
@@ -119,6 +127,35 @@ fun CleanCacheApp(
                             popUpTo("home") { inclusive = true }
                         }
                     }
+                )
+            }
+
+            composable("large_files") {
+                LargeFilesScreen(
+                    uiState = uiState,
+                    onScan = { viewModel.scanLargeAndDuplicateFiles() },
+                    onToggleSelect = { viewModel.toggleLargeFileSelection(it) },
+                    onToggleSelectAll = { viewModel.toggleAllLargeFiles(it) },
+                    onDeleteSelected = {
+                        viewModel.deleteSelectedLargeFiles { freedBytes ->
+                            navController.navigate("result")
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("social_cleaner") {
+                SocialMediaCleanerScreen(
+                    uiState = uiState,
+                    onScan = { viewModel.scanSocialMediaJunk() },
+                    onToggleSelect = { viewModel.toggleSocialMediaJunkSelection(it) },
+                    onCleanSelected = {
+                        viewModel.cleanSelectedSocialMediaJunk { freedBytes ->
+                            navController.navigate("result")
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 

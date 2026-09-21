@@ -5,7 +5,10 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.models.JunkType
+import com.example.models.LargeFileInfo
 import com.example.models.ScanResult
+import com.example.models.SocialMediaJunk
+import com.example.services.AdvancedCleanerService
 import com.example.services.CacheService
 import com.example.utils.FileUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +37,17 @@ data class CleanerUiState(
     val availableStorageBytes: Long = 0L,
     val isDarkMode: Boolean = true,
     val errorMessage: String? = null,
-    val hasStoragePermission: Boolean = true
+    val hasStoragePermission: Boolean = true,
+
+    // State Pembersih File Besar & Duplikat
+    val largeFiles: List<LargeFileInfo> = emptyList(),
+    val isScanningLargeFiles: Boolean = false,
+    val isCleaningLargeFiles: Boolean = false,
+
+    // State Pembersih Media Sosial (WhatsApp, TikTok, dll)
+    val socialJunkItems: List<SocialMediaJunk> = emptyList(),
+    val isScanningSocialJunk: Boolean = false,
+    val isCleaningSocialJunk: Boolean = false
 ) {
     val usedStorageBytes: Long
         get() = (totalStorageBytes - availableStorageBytes).coerceAtLeast(0L)
@@ -56,11 +69,18 @@ data class CleanerUiState(
 
     val totalSelectedCleanSizeBytes: Long
         get() = selectedAppsCacheSizeBytes + selectedJunkCategoriesSizeBytes
+
+    val selectedLargeFilesSizeBytes: Long
+        get() = largeFiles.filter { it.isSelected }.sumOf { it.sizeBytes }
+
+    val selectedSocialJunkSizeBytes: Long
+        get() = socialJunkItems.filter { it.isSelected }.sumOf { it.sizeBytes }
 }
 
 class CleanerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val cacheService = CacheService(application.applicationContext)
+    private val advancedCleanerService = AdvancedCleanerService(application.applicationContext)
     private val prefs = application.getSharedPreferences("clean_cache_pro_settings", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(CleanerUiState())
@@ -216,7 +236,6 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
 
-                // Update storage info sesudah dibersihkan
                 val newAvailable = (currentState.availableStorageBytes + freedBytes)
                     .coerceAtMost(currentState.totalStorageBytes)
 
@@ -236,6 +255,123 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }
+        }
+    }
+
+    // ==========================================
+    // MODULE 1: FITUR FILE BESAR & DUPLIKAT
+    // ==========================================
+
+    fun scanLargeAndDuplicateFiles() {
+        if (_uiState.value.isScanningLargeFiles) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isScanningLargeFiles = true) }
+
+            val files = advancedCleanerService.scanLargeAndDuplicateFiles { _, _ -> }
+
+            _uiState.update {
+                it.copy(
+                    largeFiles = files,
+                    isScanningLargeFiles = false
+                )
+            }
+        }
+    }
+
+    fun toggleLargeFileSelection(fileId: String) {
+        _uiState.update { state ->
+            val updatedList = state.largeFiles.map { item ->
+                if (item.id == fileId) item.copy(isSelected = !item.isSelected) else item
+            }
+            state.copy(largeFiles = updatedList)
+        }
+    }
+
+    fun toggleAllLargeFiles(selectAll: Boolean) {
+        _uiState.update { state ->
+            val updatedList = state.largeFiles.map { it.copy(isSelected = selectAll) }
+            state.copy(largeFiles = updatedList)
+        }
+    }
+
+    fun deleteSelectedLargeFiles(onComplete: (Long) -> Unit) {
+        if (_uiState.value.isCleaningLargeFiles) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCleaningLargeFiles = true) }
+
+            val selectedFiles = _uiState.value.largeFiles.filter { it.isSelected }
+            val freedBytes = advancedCleanerService.deleteSelectedFiles(selectedFiles)
+
+            val remainingFiles = _uiState.value.largeFiles.filter { !it.isSelected }
+            val newAvailable = (_uiState.value.availableStorageBytes + freedBytes)
+                .coerceAtMost(_uiState.value.totalStorageBytes)
+
+            _uiState.update {
+                it.copy(
+                    largeFiles = remainingFiles,
+                    isCleaningLargeFiles = false,
+                    lastFreedSizeBytes = freedBytes,
+                    availableStorageBytes = newAvailable
+                )
+            }
+            onComplete(freedBytes)
+        }
+    }
+
+    // ==========================================
+    // MODULE 2: FITUR PEMBERSIH MEDIA SOSIAL
+    // ==========================================
+
+    fun scanSocialMediaJunk() {
+        if (_uiState.value.isScanningSocialJunk) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isScanningSocialJunk = true) }
+
+            val junkList = advancedCleanerService.scanSocialMediaJunk()
+
+            _uiState.update {
+                it.copy(
+                    socialJunkItems = junkList,
+                    isScanningSocialJunk = false
+                )
+            }
+        }
+    }
+
+    fun toggleSocialMediaJunkSelection(junkId: String) {
+        _uiState.update { state ->
+            val updatedList = state.socialJunkItems.map { item ->
+                if (item.id == junkId) item.copy(isSelected = !item.isSelected) else item
+            }
+            state.copy(socialJunkItems = updatedList)
+        }
+    }
+
+    fun cleanSelectedSocialMediaJunk(onComplete: (Long) -> Unit) {
+        if (_uiState.value.isCleaningSocialJunk) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCleaningSocialJunk = true) }
+
+            val selectedItems = _uiState.value.socialJunkItems.filter { it.isSelected }
+            val freedBytes = advancedCleanerService.cleanSocialMediaJunk(selectedItems)
+
+            val remainingItems = _uiState.value.socialJunkItems.filter { !it.isSelected }
+            val newAvailable = (_uiState.value.availableStorageBytes + freedBytes)
+                .coerceAtMost(_uiState.value.totalStorageBytes)
+
+            _uiState.update {
+                it.copy(
+                    socialJunkItems = remainingItems,
+                    isCleaningSocialJunk = false,
+                    lastFreedSizeBytes = freedBytes,
+                    availableStorageBytes = newAvailable
+                )
+            }
+            onComplete(freedBytes)
         }
     }
 
