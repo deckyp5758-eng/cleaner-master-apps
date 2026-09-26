@@ -257,6 +257,7 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                         scanProgressPercent = 100
                     )
                 }
+                refreshStorageInfo()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -326,6 +327,7 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                     availableStorageBytes = newAvailable
                 )
             }
+            refreshStorageInfo()
             onComplete(freedBytes)
         }
     }
@@ -381,6 +383,7 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                     availableStorageBytes = newAvailable
                 )
             }
+            refreshStorageInfo()
             onComplete(freedBytes)
         }
     }

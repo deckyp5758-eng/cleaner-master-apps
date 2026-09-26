@@ -3,8 +3,11 @@ name: CleanCache Pro Auto Build & Release APK
 on:
   workflow_dispatch: # Memungkinkan pemicuan manual dari halaman GitHub Actions
   push:
+    branches:
+      - main
+      - master
     tags:
-      - 'v*' # Memicu otomatisasi setiap kali Anda membuat Tag seperti v1.0.0, v1.1.0
+      - 'v*' # Memicu otomatisasi setiap kali Anda membuat Tag seperti v1.0.0, v1.1.0 atau push ke main/master
 
 permissions:
   contents: write

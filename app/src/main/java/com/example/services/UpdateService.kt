@@ -104,15 +104,15 @@ class UpdateService(private val context: Context) {
     fun getDemoUpdateInfo(): UpdateInfo {
         val localVersion = VersionUtils.getLocalVersionName(context)
         return UpdateInfo(
-            latestVersionName = "1.2.0",
-            latestVersionCode = 3,
-            releaseTitle = "CleanCache Pro v1.2.0 - Performa Pembersih Lebih Cepat",
+            latestVersionName = "1.3.0",
+            latestVersionCode = 4,
+            releaseTitle = "CleanCache Pro v1.3.0 - Performa Pembersih Lebih Cepat",
             changelog = "• Algoritma pemindaian cache 3x lebih cepat\n" +
                     "• Dukungan pembersihan file thumbnail galeri yang presisi\n" +
                     "• Perbaikan bug dan optimalisasi penggunaan memori RAM\n" +
                     "• Pembaruan antarmuka Material 3 terbaru",
-            apkDownloadUrl = "https://github.com/$githubOwner/$githubRepo/releases/download/v1.2.0/CleanCachePro-v1.2.0.apk",
-            apkFileName = "CleanCachePro-v1.2.0.apk",
+            apkDownloadUrl = "https://github.com/$githubOwner/$githubRepo/releases/download/v1.3.0/CleanCachePro-v1.3.0.apk",
+            apkFileName = "CleanCachePro-v1.3.0.apk",
             isUpdateAvailable = true,
             localVersionName = localVersion
         )
@@ -128,7 +128,7 @@ class UpdateService(private val context: Context) {
     ): Result<File> = withContext(Dispatchers.IO) {
         try {
             // Jika URL adalah demo URL, lakukan simulasi pengunduhan yang halus
-            if (downloadUrl.contains("example.com") || downloadUrl.contains("releases/download/v1.1.0") || downloadUrl.contains("releases/download/v1.2.0")) {
+            if (downloadUrl.contains("example.com") || downloadUrl.contains("releases/download/v1.1.0") || downloadUrl.contains("releases/download/v1.2.0") || downloadUrl.contains("releases/download/v1.3.0")) {
                 val totalSimulatedBytes = 18L * 1024 * 1024 // 18 MB
                 var currentBytes = 0L
 
