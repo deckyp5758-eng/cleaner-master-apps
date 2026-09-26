@@ -11,6 +11,7 @@ import com.example.models.SocialMediaJunk
 import com.example.services.AdvancedCleanerService
 import com.example.services.CacheService
 import com.example.utils.FileUtils
+import com.example.utils.PermissionUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,7 +90,16 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
     init {
         val savedDarkMode = prefs.getBoolean("is_dark_mode", true)
         refreshStorageInfo()
+        checkStoragePermission(application.applicationContext)
         _uiState.update { it.copy(isDarkMode = savedDarkMode) }
+    }
+
+    /**
+     * Memeriksa dan memperbarui status izin penyimpanan.
+     */
+    fun checkStoragePermission(context: Context) {
+        val hasPermission = PermissionUtils.hasStoragePermission(context)
+        _uiState.update { it.copy(hasStoragePermission = hasPermission) }
     }
 
     /**

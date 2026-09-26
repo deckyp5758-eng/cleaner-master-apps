@@ -42,22 +42,32 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.PrimaryNavy
+import com.example.utils.PermissionUtils
 import com.example.viewmodel.CleanerUiState
 import com.example.viewmodel.ScanState
 import com.example.widgets.ScanButton
 import com.example.widgets.StorageGaugeCard
+import com.example.widgets.StoragePermissionDialog
 
 /**
  * Halaman utama CleanCache Pro beserta shortcut fitur File Besar & Pembersih Sosmed.
@@ -75,7 +85,35 @@ fun HomeScreen(
     onErrorDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Memeriksa kembali izin saat aktivitas di-resume dari halaman Pengaturan
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (showPermissionDialog && PermissionUtils.hasStoragePermission(context)) {
+                    showPermissionDialog = false
+                    onStartScan()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val handleScanClick = {
+        if (PermissionUtils.hasStoragePermission(context)) {
+            onStartScan()
+        } else {
+            showPermissionDialog = true
+        }
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
@@ -161,7 +199,7 @@ fun HomeScreen(
             // Tombol Scan Bulat Besar di Tengah
             ScanButton(
                 isScanning = uiState.scanState == ScanState.SCANNING,
-                onClick = onStartScan
+                onClick = handleScanClick
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -226,7 +264,7 @@ fun HomeScreen(
                     description = "Hapus cache app",
                     icon = Icons.Rounded.CleaningServices,
                     accentColor = AccentGreen,
-                    onClick = onStartScan,
+                    onClick = handleScanClick,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -302,6 +340,18 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        if (showPermissionDialog) {
+            StoragePermissionDialog(
+                onPermissionGranted = {
+                    showPermissionDialog = false
+                    onStartScan()
+                },
+                onDismiss = {
+                    showPermissionDialog = false
+                }
+            )
         }
     }
 }

@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +57,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,7 +70,9 @@ import com.example.models.FileCategory
 import com.example.models.LargeFileInfo
 import com.example.ui.theme.AccentGreen
 import com.example.utils.FileUtils
+import com.example.utils.PermissionUtils
 import com.example.viewmodel.CleanerUiState
+import com.example.widgets.StoragePermissionDialog
 
 /**
  * Halaman Pembersih File Besar & File Duplikat.
@@ -81,11 +88,38 @@ fun LargeFilesScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var selectedFilterTab by remember { mutableStateOf("SEMUA") }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
+    // Memeriksa kembali izin saat aktivitas di-resume dari halaman Pengaturan
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (showPermissionDialog && PermissionUtils.hasStoragePermission(context)) {
+                    showPermissionDialog = false
+                    onScan()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val handleScanWithPermission = {
+        if (PermissionUtils.hasStoragePermission(context)) {
+            onScan()
+        } else {
+            showPermissionDialog = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (uiState.largeFiles.isEmpty()) {
-            onScan()
+            handleScanWithPermission()
         }
     }
 
@@ -297,6 +331,18 @@ fun LargeFilesScreen(
                     }
                 }
             }
+        }
+
+        if (showPermissionDialog) {
+            StoragePermissionDialog(
+                onPermissionGranted = {
+                    showPermissionDialog = false
+                    onScan()
+                },
+                onDismiss = {
+                    showPermissionDialog = false
+                }
+            )
         }
     }
 }
