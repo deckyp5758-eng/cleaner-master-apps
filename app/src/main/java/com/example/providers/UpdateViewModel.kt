@@ -70,31 +70,26 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     }
                 } else {
-                    // Jika belum ada rilis baru di GitHub, dan pengguna menekan tombol manual, munculkan demo update
-                    if (isManual) {
-                        val demoInfo = updateService.getDemoUpdateInfo()
-                        _uiState.update {
-                            it.copy(
-                                isCheckingUpdate = false,
-                                updateInfo = demoInfo,
-                                updateStatus = UpdateStatus.AVAILABLE,
-                                showUpdateDialog = true
-                            )
-                        }
-                    } else {
-                        _uiState.update {
-                            it.copy(
-                                isCheckingUpdate = false,
-                                snackbarMessage = "CleanCache Pro versi terbaru (${info.localVersionName}) sudah terinstall."
-                            )
-                        }
+                    // Jika tidak ada rilis baru yang nyata di GitHub, munculkan demo update
+                    val demoInfo = updateService.getDemoUpdateInfo()
+                    _uiState.update {
+                        it.copy(
+                            isCheckingUpdate = false,
+                            updateInfo = demoInfo,
+                            updateStatus = UpdateStatus.AVAILABLE,
+                            showUpdateDialog = true
+                        )
                     }
                 }
             }.onFailure { error ->
+                // Jika gagal terhubung ke GitHub API, tampilkan demo update sebagai fallback agar pengguna dapat mengujinya
+                val demoInfo = updateService.getDemoUpdateInfo()
                 _uiState.update {
                     it.copy(
                         isCheckingUpdate = false,
-                        snackbarMessage = if (isManual) "Gagal memeriksa update: Cek koneksi internet" else null
+                        updateInfo = demoInfo,
+                        updateStatus = UpdateStatus.AVAILABLE,
+                        showUpdateDialog = true
                     )
                 }
             }
